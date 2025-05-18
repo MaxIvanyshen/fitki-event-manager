@@ -24,6 +24,9 @@ RUN apk --no-cache add ca-certificates
 
 WORKDIR /root/
 
+ENV PORT=8080
+EXPOSE 8080
+
 # Copy the binary from builder
 COPY --from=builder /app/main .
 
