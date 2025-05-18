@@ -30,5 +30,9 @@ EXPOSE 8080
 # Copy the binary from builder
 COPY --from=builder /app/main .
 
+# Copy migration files
+COPY --from=builder /app/database/migrations ./database/migrations
+
 # Command to run
 CMD ["./main"]
+
