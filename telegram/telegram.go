@@ -13,7 +13,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
-const REGISTERED_ERROR = "UNIQUE constraint failed: users.username, users.tg_id, users.event_id"
+const REGISTERED_ERROR = "pq: duplicate key value violates unique constraint \"unique_tg_event_id\""
 
 type State int64
 
