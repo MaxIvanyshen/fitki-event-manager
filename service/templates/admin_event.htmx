@@ -1,0 +1,184 @@
+{{ block "admin_event" .}}
+<!DOCTYPE html>
+<html lang="uk">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Управління подією</title>
+        <link rel="icon" href="https://fitki.vntu.edu.ua/wp-content/uploads/2022/12/cropped-FITKI-mini-192x192.png" type="image/x-icon">
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://unpkg.com/htmx.org@1.9.6"></script>
+        <style>
+            input, textarea, select {
+                border: 1px solid #d1d5db;
+                padding: 0.5rem;
+            }
+        </style>
+    </head>
+    <body class="bg-gray-100 min-h-screen">
+        <div class="container mx-auto px-4 py-8">
+            <header class="mb-10">
+                <div class="flex justify-between items-center">
+                    <h1 class="text-4xl font-bold text-indigo-700">{{ .Event.Name }}</h1>
+                    <a href="/admin" class="bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded">
+                        Назад до подій
+                    </a>
+                </div>
+            </header>
+            
+            <main class="space-y-8">
+                <!-- Event Edit Form -->
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-800">Редагувати подію</h2>
+                    
+                    <form hx-put="/admin/events/{{ .Event.ID }}" hx-target="#error" class="space-y-4">
+                        <div>
+                            <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Назва події</label>
+                            <input type="text" id="name" name="name" value="{{ .Event.Name }}" 
+                                class="block w-full rounded-md border border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2">
+                        </div>
+                        
+                        <div>
+                            <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Опис</label>
+                            <textarea id="description" name="description" rows="3" 
+                                class="block w-full rounded-md border border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2">{{ .Event.Description.String }}</textarea>
+                        </div>
+                        
+                        <div>
+                            <label for="date" class="block text-sm font-medium text-gray-700 mb-1">Дата події</label>
+                            <input type="datetime-local" id="date" name="date" 
+                            value='{{ .Event.Date }}'
+                                class="block w-full rounded-md border border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2">
+                        </div>
+                        
+                        <div class="flex justify-end space-x-3 mt-6">
+                            <button type="submit" 
+                                class="py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                Зберегти зміни
+                            </button>
+                            {{ if .Event.Date.After (now) }}
+                            <button type="button" hx-post="/admin/events/{{ .Event.ID }}/current" hx-target="#error"
+                                class="py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                Зробити поточним івентом
+                            </button>
+                            {{ end }}
+                        </div>
+                    </form>
+                    <div id="error" class="text-red-500 mt-4"></div>
+                </div>
+                <!-- Winners Section Placeholder -->
+                <div id="winners-section" class="hidden bg-white p-6 rounded-lg shadow-md">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-2xl font-semibold text-gray-800">Обрати переможців</h2>
+                        <button type="button" 
+                                onclick="document.getElementById('winners-section').classList.add('hidden')"
+                                class="text-gray-400 hover:text-gray-500">
+                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                    
+                    <form hx-post="/admin/events/{{ .Event.ID }}/winners" 
+                          hx-target="#winners-list" 
+                          hx-swap="innerHTML"
+                          class="mb-4">
+                        <div class="mb-4">
+                            <label for="winners_count" class="block text-sm font-medium text-gray-700 mb-1">Кількість переможців</label>
+                            <input type="number" id="winners_count" name="count" min="1" 
+                                   max="{{ if .Users }}{{ len .Users }}{{ else }}1{{ end }}" 
+                                   value="1" 
+                                   class="block w-full rounded-md border border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2">
+                        </div>
+                        
+                        <div class="flex justify-end">
+                            <button type="submit" 
+                                    class="py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                Обрати переможців
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <div id="winners-list" class="mt-4 max-h-60 overflow-y-auto">
+                        <!-- Winners will be displayed here -->
+                    </div>
+                </div>
+                
+
+                <!-- Users Table -->
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <h2 class="text-2xl font-semibold text-gray-800">Учасники події</h2>
+                            <p class="text-sm text-gray-600 mt-1">
+                                Всього зареєстровано: <span class="font-medium">{{ if .Users }}{{ len .Users }}{{ else }}0{{ end }}</span> учасників
+                            </p>
+                        </div>
+                        <button type="button"
+                                onclick="document.getElementById('winners-section').classList.remove('hidden')"
+                                class="py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                                {{ if not .Users }}disabled{{ end }}>
+                            Обрати переможців
+                        </button>
+                    </div>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ім'я</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Логін</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Дії</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                {{ if .Users }}
+                                    {{ range .Users }}
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ .ID }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ .Name }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ .Username }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            <button 
+                                                hx-delete="/admin/events/{{ $.Event.ID }}/users/{{ .ID }}"
+                                                hx-confirm="Ви впевнені, що хочете видалити цього користувача з події?"
+                                                hx-target="closest tr"
+                                                hx-swap="outerHTML"
+                                                class="text-red-600 hover:text-red-900">
+                                                Видалити
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {{ end }}
+                                {{ else }}
+                                    <tr>
+                                        <td colspan="4" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">Немає зареєстрованих учасників</td>
+                                    </tr>
+                                {{ end }}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <script>
+            // Format date for datetime-local input
+            document.addEventListener('DOMContentLoaded', function() {
+                const dateInput = document.getElementById('date');
+                if (dateInput && dateInput.value) {
+                    // Ensure the date is in the correct format for datetime-local input
+                    try {
+                        const date = new Date(dateInput.value);
+                        const formattedDate = date.toISOString().slice(0, 16);
+                        dateInput.value = formattedDate;
+                    } catch (e) {
+                        console.error("Error formatting date:", e);
+                    }
+                }
+            });
+        </script>
+    </body>
+</html>
+{{ end }}

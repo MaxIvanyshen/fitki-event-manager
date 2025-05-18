@@ -1,0 +1,92 @@
+{{ block "admin_events" .}}
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Список івентів</title>
+        <link rel="icon" href="https://fitki.vntu.edu.ua/wp-content/uploads/2022/12/cropped-FITKI-mini-192x192.png" type="image/x-icon">
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://unpkg.com/htmx.org@1.9.6"></script>
+    </head>
+    <body class="bg-gray-100 min-h-screen">
+        <div class="container mx-auto px-4 py-8">
+            <header class="mb-10">
+                <div class="flex justify-between items-center">
+                    <h1 class="text-4xl font-bold text-indigo-700">Івенти (Адмін)</h1>
+                    <button 
+                        hx-get="/admin/event" 
+                        hx-target="#new-event-modal"
+                        class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white font-medium rounded-md transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                        Створити новий івент
+                    </button>
+                </div>
+            </header>
+            <main>
+                <!-- New Event Modal Placeholder -->
+                <div id="new-event-modal" class="mb-6"></div>
+                
+                <!-- Events List -->
+                <ul class="space-y-6">
+                    {{ range .Events }}
+                    <li class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
+                        <div class="p-6">
+                            <h2 class="text-2xl font-semibold text-indigo-600">{{ .Name }}</h2>
+                            <p class="mt-2 text-gray-700">{{ .Description.String }}</p>
+
+                            <div class="mt-4 flex space-x-2">
+                                <a href="/admin/events/{{ .ID }}" 
+                                    class="inline-block px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-md transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+                                    aria-disabled="false">
+                                    Показати
+                                </a>
+                                <button
+                                    hx-delete="/admin/events/{{ .ID }}"
+                                    hx-confirm="Ви впевнені, що хочете видалити цей івент?"
+                                    hx-target="closest li"
+                                    hx-swap="outerHTML swap:1s"
+                                    class="inline-block px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-md transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50">
+                                    Видалити
+                                </button>
+                            </div>
+                            <div class="mt-4 flex items-center text-sm text-gray-500">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                <span>{{ .Date.Format "02.01.2006 15:04" }}</span>
+                            </div>
+                        </div>
+                    </li>
+                    {{ end }}
+                </ul>
+                
+                <!-- Empty State -->
+                {{ if not .Events }}
+                <div class="text-center py-12 bg-white rounded-lg shadow-md">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    </svg>
+                    <h3 class="mt-4 text-lg font-medium text-gray-900">Немає івентів</h3>
+                    <p class="mt-1 text-sm text-gray-500">Створіть свій перший івент, натиснувши кнопку "Створити новий івент".</p>
+                </div>
+                {{ end }}
+            </main>
+        </div>
+        
+        <script>
+            document.addEventListener('htmx:afterOnLoad', function(event) {
+                if (event.detail.pathInfo.requestPath === '/admin/event') {
+                    const template = document.getElementById('new-event-form-template');
+                    if (template) {
+                        event.detail.target.innerHTML = template.innerHTML;
+                    }
+                }
+            });
+        </script>
+    </body>
+</html>
+{{end}}
+

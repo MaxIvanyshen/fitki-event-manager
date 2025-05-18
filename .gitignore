@@ -1,0 +1,7 @@
+.env
+event.db
+config.json
+# Air hot reload artifacts
+bin/
+tmp/
+
