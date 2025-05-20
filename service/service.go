@@ -609,6 +609,8 @@ func (s *Service) handleGetWinners(w http.ResponseWriter, r *http.Request) {
 		winnersCount = len(users)
 	}
 
+	seen := make(map[int64]bool)
+
 	// Select random winners
 	for i := 0; i < winnersCount; i++ {
 		if len(users) == 0 {
@@ -618,7 +620,13 @@ func (s *Service) handleGetWinners(w http.ResponseWriter, r *http.Request) {
 		// Pick a random index within the valid range
 		index := rand.IntN(len(users))
 
+		if seen[users[index].ID] {
+			i--
+			continue
+		}
+
 		winners = append(winners, users[index])
+		seen[users[index].ID] = true
 
 		// Remove the selected user from the pool
 		users = append(users[:index], users[index+1:]...)
