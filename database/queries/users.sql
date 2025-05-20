@@ -25,3 +25,8 @@ WHERE event_id = sqlc.arg(event_id);
 -- name: DeleteUsersByIdAndEventId :exec
 DELETE FROM users
 WHERE id = sqlc.arg(id) AND event_id = sqlc.arg(event_id);
+-- name: UpdateUserN :exec
+UPDATE users
+SET n = sqlc.arg(n)
+WHERE id = sqlc.arg(id)
+AND event_id = sqlc.arg(event_id);

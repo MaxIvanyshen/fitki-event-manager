@@ -60,6 +60,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.updateEventStmt, err = db.PrepareContext(ctx, updateEvent); err != nil {
 		return nil, fmt.Errorf("error preparing query UpdateEvent: %w", err)
 	}
+	if q.updateUserNStmt, err = db.PrepareContext(ctx, updateUserN); err != nil {
+		return nil, fmt.Errorf("error preparing query UpdateUserN: %w", err)
+	}
 	return &q, nil
 }
 
@@ -125,6 +128,11 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing updateEventStmt: %w", cerr)
 		}
 	}
+	if q.updateUserNStmt != nil {
+		if cerr := q.updateUserNStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing updateUserNStmt: %w", cerr)
+		}
+	}
 	return err
 }
 
@@ -176,6 +184,7 @@ type Queries struct {
 	getUserByUsernameStmt         *sql.Stmt
 	getUsersByEventIDStmt         *sql.Stmt
 	updateEventStmt               *sql.Stmt
+	updateUserNStmt               *sql.Stmt
 }
 
 func (q *Queries) WithTx(tx *sql.Tx) *Queries {
@@ -194,5 +203,6 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		getUserByUsernameStmt:         q.getUserByUsernameStmt,
 		getUsersByEventIDStmt:         q.getUsersByEventIDStmt,
 		updateEventStmt:               q.updateEventStmt,
+		updateUserNStmt:               q.updateUserNStmt,
 	}
 }

@@ -21,6 +21,7 @@ type Querier interface {
 	GetUserByUsername(ctx context.Context, username string) (*Users, error)
 	GetUsersByEventID(ctx context.Context, eventID int64) ([]*Users, error)
 	UpdateEvent(ctx context.Context, arg *UpdateEventParams) (*Events, error)
+	UpdateUserN(ctx context.Context, arg *UpdateUserNParams) error
 }
 
 var _ Querier = (*Queries)(nil)

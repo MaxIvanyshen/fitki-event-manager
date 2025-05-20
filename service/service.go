@@ -150,6 +150,7 @@ func Start(router *http.ServeMux, logger *slog.Logger, db *sql.DB) {
 	svc.router.HandleFunc("POST /admin/event", svc.requireAdmin(svc.handleCreateEvent))
 	svc.router.HandleFunc("DELETE /admin/events/{id}", svc.requireAdmin(svc.handleDeleteEvent))
 	svc.router.HandleFunc("DELETE /admin/events/{eventID}/users/{userID}", svc.requireAdmin(svc.handleDeleteEventUser))
+	svc.router.HandleFunc("PATCH /admin/events/{eventID}/users/{userID}", svc.requireAdmin(svc.handleUpdateUserCount))
 }
 
 // Middleware to check if user is admin
@@ -592,6 +593,16 @@ func (s *Service) handleGetWinners(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	n := len(users)
+	for i := range n {
+		n := users[i].N
+		if n > 1 {
+			for range n - 1 {
+				users = append(users, users[i])
+			}
+		}
+	}
+
 	// Determine how many winners to select (minimum of count and available users)
 	winnersCount := count
 	if winnersCount > len(users) {
@@ -619,4 +630,52 @@ func (s *Service) handleGetWinners(w http.ResponseWriter, r *http.Request) {
 	s.runTemplate(w, r, "winners", winnersData{
 		Users: winners,
 	})
+}
+
+func (s *Service) handleUpdateUserCount(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPatch {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	eventID, err := strconv.Atoi(r.PathValue("eventID"))
+	if err != nil {
+		s.logger.LogAttrs(r.Context(), slog.LevelError, "Invalid event ID", slog.Any("error", err))
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+
+	userID, err := strconv.Atoi(r.PathValue("userID"))
+	if err != nil {
+		s.logger.LogAttrs(r.Context(), slog.LevelError, "Invalid user ID", slog.Any("error", err))
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+
+	err = r.ParseForm()
+	if err != nil {
+		s.logger.LogAttrs(r.Context(), slog.LevelError, "Failed to parse form", slog.Any("error", err))
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+
+	n, err := strconv.Atoi(r.FormValue("n"))
+	if err != nil {
+		s.logger.LogAttrs(r.Context(), slog.LevelError, "Invalid count", slog.Any("error", err))
+		fmt.Fprintf(w, errHTML, "Invalid count")
+		return
+	}
+
+	err = s.queries.UpdateUserN(r.Context(), &sqlc.UpdateUserNParams{
+		ID:      int64(userID),
+		EventID: int64(eventID),
+		N:       int32(n),
+	})
+	if err != nil {
+		s.logger.LogAttrs(r.Context(), slog.LevelError, "Failed to delete user", slog.Any("error", err))
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	fmt.Fprintf(w, "%d", n)
 }

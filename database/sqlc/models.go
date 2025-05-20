@@ -24,4 +24,5 @@ type Users struct {
 	TgID      int64        `db:"tg_id" json:"tg_id"`
 	EventID   int64        `db:"event_id" json:"event_id"`
 	CreatedAt sql.NullTime `db:"created_at" json:"created_at"`
+	N         int32        `db:"n" json:"n"`
 }

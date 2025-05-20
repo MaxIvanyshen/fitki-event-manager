@@ -32,6 +32,21 @@ const successHTML = `
 </div>
 `
 
+const votesForm = `
+	<form hx-patch="/admin/events/{{ $.Event.ID }}/users/{{ .ID }}" 
+		  hx-target="closest td" 
+		  hx-swap="innerHTML"
+		  class="flex items-center space-x-2">
+		<input type="number" name="n" value="%d" min="1"
+			   class="w-16 py-1 px-2 text-sm border border-gray-300 rounded focus:border-indigo-500 focus:ring-indigo-500">
+		<button type="submit" class="text-indigo-600 hover:text-indigo-900">
+			<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+			</svg>
+		</button>
+	</form>
+`
+
 type AdminData struct {
 	Username string
 	Password string

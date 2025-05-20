@@ -20,7 +20,7 @@ INSERT INTO users (
     $2,
     $3,
     $4
-) RETURNING id, name, username, tg_id, event_id, created_at
+) RETURNING id, name, username, tg_id, event_id, created_at, n
 `
 
 type CreateUserParams struct {
@@ -45,6 +45,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg *CreateUserParams) (*Users
 		&i.TgID,
 		&i.EventID,
 		&i.CreatedAt,
+		&i.N,
 	)
 	return &i, err
 }
@@ -75,7 +76,7 @@ func (q *Queries) DeleteUsersByIdAndEventId(ctx context.Context, arg *DeleteUser
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, name, username, tg_id, event_id, created_at FROM users
+SELECT id, name, username, tg_id, event_id, created_at, n FROM users
 WHERE id = $1
 `
 
@@ -89,12 +90,13 @@ func (q *Queries) GetUserByID(ctx context.Context, id int64) (*Users, error) {
 		&i.TgID,
 		&i.EventID,
 		&i.CreatedAt,
+		&i.N,
 	)
 	return &i, err
 }
 
 const getUserByUsername = `-- name: GetUserByUsername :one
-SELECT id, name, username, tg_id, event_id, created_at FROM users
+SELECT id, name, username, tg_id, event_id, created_at, n FROM users
 WHERE username = $1
 `
 
@@ -108,12 +110,13 @@ func (q *Queries) GetUserByUsername(ctx context.Context, username string) (*User
 		&i.TgID,
 		&i.EventID,
 		&i.CreatedAt,
+		&i.N,
 	)
 	return &i, err
 }
 
 const getUsersByEventID = `-- name: GetUsersByEventID :many
-SELECT id, name, username, tg_id, event_id, created_at FROM users
+SELECT id, name, username, tg_id, event_id, created_at, n FROM users
 WHERE event_id = $1
 `
 
@@ -133,6 +136,7 @@ func (q *Queries) GetUsersByEventID(ctx context.Context, eventID int64) ([]*User
 			&i.TgID,
 			&i.EventID,
 			&i.CreatedAt,
+			&i.N,
 		); err != nil {
 			return nil, err
 		}
@@ -145,4 +149,22 @@ func (q *Queries) GetUsersByEventID(ctx context.Context, eventID int64) ([]*User
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateUserN = `-- name: UpdateUserN :exec
+UPDATE users
+SET n = $1
+WHERE id = $2
+AND event_id = $3
+`
+
+type UpdateUserNParams struct {
+	N       int32 `db:"n" json:"n"`
+	ID      int64 `db:"id" json:"id"`
+	EventID int64 `db:"event_id" json:"event_id"`
+}
+
+func (q *Queries) UpdateUserN(ctx context.Context, arg *UpdateUserNParams) error {
+	_, err := q.exec(ctx, q.updateUserNStmt, updateUserN, arg.N, arg.ID, arg.EventID)
+	return err
 }
