@@ -8,18 +8,19 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"log/slog"
 	"math/rand/v2"
 	"net/http"
 	"os"
 	"strconv"
-	"text/template"
 	"time"
 
 	"giveaway-tool/config"
 	"giveaway-tool/database/sqlc"
 
 	"github.com/gorilla/sessions"
+	"github.com/skip2/go-qrcode"
 )
 
 //go:embed templates
@@ -139,6 +140,10 @@ func Start(router *http.ServeMux, logger *slog.Logger, db *sql.DB) {
 	svc.router.HandleFunc("GET /login", svc.handleLoginPage)
 	svc.router.HandleFunc("POST /login", svc.handleLogin)
 	svc.router.HandleFunc("GET /logout", svc.handleLogout)
+
+	//Public QR Code generator
+	svc.router.HandleFunc("GET /qr-code", svc.handleQRCodePage)
+	svc.router.HandleFunc("POST /qr-code", svc.handleQRCodeGeneration)
 
 	// Admin routes - protected by middleware
 	svc.router.HandleFunc("GET /admin", svc.requireAdmin(svc.handleAdminDashboard))
@@ -686,4 +691,48 @@ func (s *Service) handleUpdateUserCount(w http.ResponseWriter, r *http.Request) 
 	}
 
 	fmt.Fprintf(w, "%d", n)
+}
+
+func (s *Service) handleQRCodePage(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	s.runTemplate(w, r, "qrcode-page", nil)
+}
+
+func (s *Service) handleQRCodeGeneration(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		fmt.Fprintln(w, "Error:", err)
+		return
+	}
+
+	url := r.FormValue("url")
+
+	qr, err := qrcode.New(url, qrcode.Medium)
+	if err != nil {
+		fmt.Fprintln(w, "Error:", err)
+		return
+	}
+
+	png, err := qr.PNG(512)
+	if err != nil {
+		fmt.Fprintln(w, "Error:", err)
+		return
+	}
+
+	b64 := base64.StdEncoding.EncodeToString(png)
+	type Result struct {
+		URL template.URL
+	}
+
+	result := Result{URL: template.URL("data:image/png;base64," + b64)}
+
+	s.runTemplate(w, r, "qr-output", result)
 }
